@@ -1,24 +1,12 @@
 import express, { Request, Response } from 'express';
 import { ICreateUserBody, IUser, IUserQueryParams } from './types/users';
+import { fakeUsers } from './utils/constants';
+import { resolveIndexByUserId } from './utils/middleware';
 
 const app = express();
 app.use(express.json())
 
 const PORT = process.env.PORT || 3000;
-
-const fakeUsers: IUser[] = [
-  { id: 1, username: 'davirds', displayName: 'Davi R' },
-  { id: 2, username: 'mariasilva', displayName: 'Maria Silva' },
-  { id: 3, username: 'joaosantos', displayName: 'João Santos' },
-  { id: 4, username: 'carolpires', displayName: 'Carolina Pires' },
-  { id: 5, username: 'lucasf', displayName: 'Lucas Ferreira' },
-  { id: 6, username: 'anapaula', displayName: 'Ana Paula' },
-  { id: 7, username: 'pedroalves', displayName: 'Pedro Alves' },
-  { id: 8, username: 'julianar', displayName: 'Juliana Ribeiro' },
-  { id: 9, username: 'matheust', displayName: 'Matheus Teixeira' },
-  { id: 10, username: 'lais.cruz', displayName: 'Laís Cruz' },
-  { id: 11, username: 'rafael.moraes', displayName: 'Rafael Moraes' }
-];
 
 app.get('/', (req: Request, res: Response) => {
   res.status(200).send('Hello, world');
@@ -57,8 +45,7 @@ app.get('/api/users/:id', (req: Request, res: Response) => {
   res.status(200).send(user);
 });
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
+// @ts-ignore i dont really know
 app.post('/api/users', (req: Request<object, object, ICreateUserBody>, res: Response) => {
   const { username, displayName } = req.body;
 
@@ -77,21 +64,34 @@ app.post('/api/users', (req: Request<object, object, ICreateUserBody>, res: Resp
   return res.status(201).json(newUser);
 })
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error 
-app.put('/api/users/:id', (req: Request, res: Response) => {
-  const { body: { username, displayName }, params: { id } } = req
-  
-  const parsedId = parseInt(id)
-  if (isNaN(parsedId)) return res.sendStatus(400)
+// @ts-ignore i dont really know
+app.put('/api/users/:id', resolveIndexByUserId, (req: RequestFindUserIndex, res: Response) => {
+  const { findUserIndex, body} = req
 
-  const findUserIndex = fakeUsers.findIndex(user => user.id == parsedId)
-
-  if (findUserIndex == -1) return res.sendStatus(404)
-
-  const updatedUser = fakeUsers[findUserIndex] = { id: parsedId, username, displayName }
+  const updatedUser = fakeUsers[findUserIndex] = { id: fakeUsers[findUserIndex].id, ...body }
 
   return res.status(200).json(updatedUser)
+  
+})
+
+// @ts-ignore i dont really know
+app.patch('/api/users/:id', resolveIndexByUserId, (req: resolveIndexByUserId, res: Response) => {
+  const { findUserIndex, body} = req
+  
+  const updatedUser = fakeUsers[findUserIndex] = { ...fakeUsers[findUserIndex], ...body }
+
+  return res.status(200).json(updatedUser)
+  
+})
+
+// @ts-ignore i dont really know
+app.delete('/api/users/:id', resolveIndexByUserId, (req: resolveIndexByUserId, res: Response) => {
+
+  fakeUsers.splice(req.resolveIndexByUserId, 1)
+
+  return res.status(200).json({
+    msg: 'User removed'
+  })
   
 })
 
