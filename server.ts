@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { request, Request, Response } from 'express';
 
 const app = express();
 
@@ -24,12 +24,35 @@ interface IUser {
   displayName: string;
 }
 
+interface UserQueryParams {
+  filter?: 'username' | 'displayName'; // 'filter' é opcional agora para permitir listar todos
+  value?: string; // 'value' é opcional
+}
+
 app.get('/', (req: Request, res: Response) => {
   res.status(200).send('Hello, world');
 });
 
 app.get('/api/users', (req: Request, res: Response) => {
-  res.status(200).send(fakeUsers);
+
+  const { filter, value } = req.query as UserQueryParams
+
+  let filteredUsers: IUser[] = [...fakeUsers]
+
+  if (filter && value) {
+    switch (filter) {
+      case 'username':
+        filteredUsers = fakeUsers.filter(user => user.username.toLocaleLowerCase().includes(value.toLowerCase()))
+        break;
+      case 'displayName':
+        filteredUsers = fakeUsers.filter(user => user.displayName.toLocaleLowerCase().includes(value.toLowerCase()))
+        break;
+      default:
+        break
+    }
+  }
+
+  res.status(200).send(filteredUsers);
 });
 
 app.get('/api/users/:id', (req: Request, res: Response) => {
