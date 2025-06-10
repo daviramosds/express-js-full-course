@@ -57,8 +57,9 @@ app.get('/api/users/:id', (req: Request, res: Response) => {
   res.status(200).send(user);
 });
 
-// @ts-ignore
-app.post('/api/users', (req: Request<{}, {}, ICreateUserBody>, res: Response) => {
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+app.post('/api/users', (req: Request<object, object, ICreateUserBody>, res: Response) => {
   const { username, displayName } = req.body;
 
   if (!username || !displayName) {
@@ -74,6 +75,24 @@ app.post('/api/users', (req: Request<{}, {}, ICreateUserBody>, res: Response) =>
   fakeUsers.push(newUser);
 
   return res.status(201).json(newUser);
+})
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error 
+app.put('/api/users/:id', (req: Request, res: Response) => {
+  const { body: { username, displayName }, params: { id } } = req
+  
+  const parsedId = parseInt(id)
+  if (isNaN(parsedId)) return res.sendStatus(400)
+
+  const findUserIndex = fakeUsers.findIndex(user => user.id == parsedId)
+
+  if (findUserIndex == -1) return res.sendStatus(404)
+
+  const updatedUser = fakeUsers[findUserIndex] = { id: parsedId, username, displayName }
+
+  return res.status(200).json(updatedUser)
+  
 })
 
 app.listen(PORT, () => {
