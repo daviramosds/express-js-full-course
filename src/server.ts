@@ -59,10 +59,21 @@ app.get('/api/users/:id', (req: Request, res: Response) => {
 
 // @ts-ignore
 app.post('/api/users', (req: Request<{}, {}, ICreateUserBody>, res: Response) => {
-  const { username, displayName } = req.body
+  const { username, displayName } = req.body;
 
-  return res.status(201).send({ msg: 'user created' })
+  if (!username || !displayName) {
+    return res.status(400).json({ message: 'Username e Display Name são obrigatórios.' });
+  }
 
+  const newUser: IUser = {
+    id: fakeUsers.length > 0 ? Math.max(...fakeUsers.map(u => u.id)) + 1 : 1,
+    username,
+    displayName
+  };
+
+  fakeUsers.push(newUser);
+
+  return res.status(201).json(newUser);
 })
 
 app.listen(PORT, () => {
