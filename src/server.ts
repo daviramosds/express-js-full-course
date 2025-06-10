@@ -1,10 +1,12 @@
-import express, { request, Request, Response } from 'express';
+import express, { Request, Response } from 'express';
+import { ICreateUserBody, IUser, IUserQueryParams } from './types/users';
 
 const app = express();
+app.use(express.json())
 
 const PORT = process.env.PORT || 3000;
 
-const fakeUsers = [
+const fakeUsers: IUser[] = [
   { id: 1, username: 'davirds', displayName: 'Davi R' },
   { id: 2, username: 'mariasilva', displayName: 'Maria Silva' },
   { id: 3, username: 'joaosantos', displayName: 'João Santos' },
@@ -18,24 +20,13 @@ const fakeUsers = [
   { id: 11, username: 'rafael.moraes', displayName: 'Rafael Moraes' }
 ];
 
-interface IUser {
-  id: number;
-  username: string;
-  displayName: string;
-}
-
-interface UserQueryParams {
-  filter?: 'username' | 'displayName'; // 'filter' é opcional agora para permitir listar todos
-  value?: string; // 'value' é opcional
-}
-
 app.get('/', (req: Request, res: Response) => {
   res.status(200).send('Hello, world');
 });
 
 app.get('/api/users', (req: Request, res: Response) => {
 
-  const { filter, value } = req.query as UserQueryParams
+  const { filter, value } = req.query as IUserQueryParams
 
   let filteredUsers: IUser[] = [...fakeUsers]
 
@@ -65,6 +56,14 @@ app.get('/api/users/:id', (req: Request, res: Response) => {
 
   res.status(200).send(user);
 });
+
+// @ts-ignore
+app.post('/api/users', (req: Request<{}, {}, ICreateUserBody>, res: Response) => {
+  const { username, displayName } = req.body
+
+  return res.status(201).send({ msg: 'user created' })
+
+})
 
 app.listen(PORT, () => {
   console.log(`Running on Port ${PORT}`);
