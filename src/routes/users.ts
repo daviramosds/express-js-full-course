@@ -1,17 +1,18 @@
-import { Request, Response } from 'express';
-import { Router } from "express";
-import { body, query, validationResult } from 'express-validator'
+import { Request, Response, Router } from 'express';
+import { body, validationResult } from 'express-validator';
+import { ICreateUserBody, IUser, IUserQueryParams, RequestFindUserIndex } from '../types/users';
 import { fakeUsers } from "../utils/constants";
-import { ICreateUserBody, IUser, IUserQueryParams } from '../types/users';
-import {resolveIndexByUserId} from '../utils/middleware'
+import { resolveIndexByUserId } from '../utils/middleware';
 export const usersRouter = Router()
 
-usersRouter.get('/', query('filter').isString(), (req: Request, res: Response) => {
+// @ts-ignore ---
+usersRouter.get('/', (req: Request, res: Response) => {
 
-  // @ts-ignore aaa
-  const { errors } = validationResult(req)
-  if (errors.length > 0) res.sendStatus(400)
-
+  console.log(req.sessionID)
+  req.sessionStore.get(req.sessionID, (err, sessionData) => {
+    if (err) throw err
+    console.log(sessionData)
+  })
   const { filter, value } = req.query as IUserQueryParams
 
   let filteredUsers: IUser[] = [...fakeUsers]
@@ -29,7 +30,7 @@ usersRouter.get('/', query('filter').isString(), (req: Request, res: Response) =
     }
   }
 
-  res.status(200).send(filteredUsers);
+  return res.status(200).send(filteredUsers);
 });
 
 usersRouter.get('/:id', (req: Request, res: Response) => {
@@ -43,14 +44,14 @@ usersRouter.get('/:id', (req: Request, res: Response) => {
   res.status(200).send(user);
 });
 
-usersRouter.post('', body('username').notEmpty(), (req: Request<object, object, ICreateUserBody>, res: Response) => {
+usersRouter.post('', body('username').notEmpty(), body('password').notEmpty(), (req: Request<object, object, ICreateUserBody>, res: Response) => {
 
   // @ts-ignore aaa
   const { errors } = validationResult(req)
   if (errors.length > 0) res.sendStatus(400)
     console.log(errors)
     
-  const { username, displayName } = req.body;
+  const { username, displayName, password } = req.body;
 
   if (!username) {
     res.status(400).json({ message: 'Username is required' });
@@ -59,7 +60,8 @@ usersRouter.post('', body('username').notEmpty(), (req: Request<object, object, 
   const newUser: IUser = {
     id: fakeUsers.length > 0 ? Math.max(...fakeUsers.map(u => u.id)) + 1 : 1,
     username,
-    displayName
+    displayName,
+    password,
   };
 
   fakeUsers.push(newUser);
@@ -71,6 +73,7 @@ usersRouter.post('', body('username').notEmpty(), (req: Request<object, object, 
 usersRouter.put('/:id', resolveIndexByUserId, (req: RequestFindUserIndex, res: Response) => {
   const { findUserIndex, body} = req
 
+  // @ts-ignore i am just trying thins
   const updatedUser = fakeUsers[findUserIndex] = { id: fakeUsers[findUserIndex].id, ...body }
 
   res.status(200).json(updatedUser)
@@ -84,7 +87,6 @@ usersRouter.patch('/:id', resolveIndexByUserId, (req: resolveIndexByUserId, res:
   const updatedUser = fakeUsers[findUserIndex] = { ...fakeUsers[findUserIndex], ...body }
 
   res.status(200).json(updatedUser)
-  
 })
 
 // @ts-ignore i dont really know

@@ -4,6 +4,7 @@ export interface IUser {
   id: number;
   username: string;
   displayName: string;
+  password: string
 }
 
 export interface IUserQueryParams {
@@ -14,6 +15,12 @@ export interface IUserQueryParams {
 export interface ICreateUserBody {
   username: string;
   displayName: string;
+  password: string
+}
+
+export interface IAuthBody {
+ username: string;
+  password: string
 }
 
 export interface RequestFindUserIndex extends Request {
