@@ -3,14 +3,14 @@ import { Request } from 'express';
 export interface IUser {
   id: number;
   username: string;
-  displayName: string;
+  displayName?: string;
   password: string
 }
 
-export interface IUserQueryParams {
-  filter?: 'username' | 'displayName';
-  value?: string;
-}
+// export interface IUserQueryParams {
+//   filter?: 'username' | 'displayName';
+//   value?: string;
+// }
 
 export interface ICreateUserBody {
   username: string;

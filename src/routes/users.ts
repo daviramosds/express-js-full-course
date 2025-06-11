@@ -1,29 +1,39 @@
 import { Request, Response, Router } from 'express';
-import { body, validationResult } from 'express-validator';
-import { ICreateUserBody, IUser, IUserQueryParams, RequestFindUserIndex } from '../types/users';
+import { IUser, RequestFindUserIndex } from '../types/users';
 import { fakeUsers } from "../utils/constants";
 import { resolveIndexByUserId } from '../utils/middleware';
+import { createUserValidatorSchema, getUsersValidatorSchema } from '../validators/user';
 export const usersRouter = Router()
 
 // @ts-ignore ---
 usersRouter.get('/', (req: Request, res: Response) => {
-
-  console.log(req.sessionID)
   req.sessionStore.get(req.sessionID, (err, sessionData) => {
     if (err) throw err
     console.log(sessionData)
   })
-  const { filter, value } = req.query as IUserQueryParams
+
+  const result = getUsersValidatorSchema.safeParse(req.query);
+
+  if (!result.success) {
+    console.log(result.error)
+    return res.status(400).json({ errors: result.error.format() });
+  }
+
+  const { filter, value } = result.data;
 
   let filteredUsers: IUser[] = [...fakeUsers]
 
   if (filter && value) {
     switch (filter) {
       case 'username':
-        filteredUsers = fakeUsers.filter(user => user.username.toLocaleLowerCase().includes(value.toLowerCase()))
+        filteredUsers = fakeUsers.filter(user =>
+        user.username.toLocaleLowerCase().includes(value.toLowerCase())
+      );
         break;
       case 'displayName':
-        filteredUsers = fakeUsers.filter(user => user.displayName.toLocaleLowerCase().includes(value.toLowerCase()))
+        filteredUsers = fakeUsers.filter(user =>
+        (user.displayName ?? '').toLocaleLowerCase().includes(value.toLowerCase())
+      );
         break;
       default:
         break
@@ -44,14 +54,16 @@ usersRouter.get('/:id', (req: Request, res: Response) => {
   res.status(200).send(user);
 });
 
-usersRouter.post('', body('username').notEmpty(), body('password').notEmpty(), (req: Request<object, object, ICreateUserBody>, res: Response) => {
 
-  // @ts-ignore aaa
-  const { errors } = validationResult(req)
-  if (errors.length > 0) res.sendStatus(400)
-    console.log(errors)
-    
-  const { username, displayName, password } = req.body;
+// @ts-ignore aaa
+usersRouter.post('', (req: Request, res: Response) => {
+  const result = createUserValidatorSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json({ errors: result.error.format() });
+  }
+
+  const { username, displayName, password } = result.data;
 
   if (!username) {
     res.status(400).json({ message: 'Username is required' });
@@ -60,7 +72,7 @@ usersRouter.post('', body('username').notEmpty(), body('password').notEmpty(), (
   const newUser: IUser = {
     id: fakeUsers.length > 0 ? Math.max(...fakeUsers.map(u => u.id)) + 1 : 1,
     username,
-    displayName,
+    displayName: (displayName ? displayName : undefined),
     password,
   };
 
