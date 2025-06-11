@@ -24,20 +24,17 @@ usersRouter.get('/', (req: Request, res: Response) => {
   let filteredUsers: IUser[] = [...fakeUsers]
 
   if (filter && value) {
-    switch (filter) {
-      case 'username':
-        filteredUsers = fakeUsers.filter(user =>
-        user.username.toLocaleLowerCase().includes(value.toLowerCase())
-      );
-        break;
-      case 'displayName':
-        filteredUsers = fakeUsers.filter(user =>
-        (user.displayName ?? '').toLocaleLowerCase().includes(value.toLowerCase())
-      );
-        break;
-      default:
-        break
-    }
+
+  const filterKey = filter as keyof IUser;
+
+  filteredUsers = fakeUsers.filter(user => {
+    const fieldValue = user[filterKey];
+
+    // Garantir que o valor seja string e evitar erro
+    if (typeof fieldValue !== 'string') return false;
+
+    return fieldValue.toLocaleLowerCase().includes(value.toLowerCase());
+  });
   }
 
   return res.status(200).send(filteredUsers);
