@@ -6,6 +6,7 @@ import passport from 'passport';
 import router from './routes';
 import "./strategies/local";
 import mongoose from 'mongoose';
+import MongoStore from 'connect-mongo';
 
 dotenv.config()
 
@@ -29,7 +30,10 @@ app.use(session({
   resave: false,
   cookie: {
     maxAge: 60 * 60 * 1000
-  }
+  },
+  store: MongoStore.create({
+    client: mongoose.connection.getClient()
+  })
 }))
 
 app.use(passport.initialize())

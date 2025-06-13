@@ -10,7 +10,7 @@ authRouter.post('/', passport.authenticate('local'), (req: Request, res: Respons
 
 // @ts-ignore ---
 authRouter.get('/', (req: Request, res: Response) => {
-  return req.user ? res.sendStatus(200) : res.sendStatus(401)
+  return req.user ? res.status(200).send(req.user) : res.sendStatus(401)
 });
 
 // @ts-ignore ---

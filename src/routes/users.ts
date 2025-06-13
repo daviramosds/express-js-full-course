@@ -6,8 +6,17 @@ import { createUserValidatorSchema, getUsersValidatorSchema, patchUserValidatorS
 export const usersRouter = Router()
 
 // @ts-ignore ---
-usersRouter.get('/', async ({ query }: Request, res: Response) => {
-  const result = getUsersValidatorSchema.safeParse(query);
+usersRouter.get('/', async (req: Request, res: Response) => {
+
+  req.sessionStore.get(req.sessionID, (err, sessionData) => {
+    if (err) {
+      throw err
+    }
+
+    console.log(sessionData)
+  })
+
+  const result = getUsersValidatorSchema.safeParse(req.query);
 
   if (!result.success) {
     console.log(result.error)
