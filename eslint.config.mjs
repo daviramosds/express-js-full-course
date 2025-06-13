@@ -32,7 +32,7 @@ export default defineConfig([
     // If you're only using `recommended`, you might need to add this manually if you have type-aware rules:
     languageOptions: {
       parserOptions: {
-        project: true, // This will look for a tsconfig.json in the current directory or parent directories
+        project: ['./tsconfig.json', './tsconfig.eslint.json'], // This will look for a tsconfig.json in the current directory or parent directories
         tsconfigRootDir: import.meta.dirname, // Use import.meta.dirname for current file's directory
       },
     },
