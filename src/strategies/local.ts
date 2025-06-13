@@ -1,16 +1,17 @@
 import passport from "passport";
 import { Strategy } from "passport-local";
-import { fakeUsers } from "../utils/constants";
+import { User } from "../mongoose/schemas/user";
 
 
 passport.serializeUser(({ id }, done) => {
   done(null, id)
 })
 
-passport.deserializeUser((id, done) => {
+passport.deserializeUser(async (id, done) => {
   try {
-    const findUser = fakeUsers.find(user => user.id == id)
+    const findUser = await User.findById(id)
     if (!findUser) throw new Error("User Not Found");
+    // @ts-ignore ---
     done(null, findUser);
   } catch (err) {
     done(err, null);
@@ -18,15 +19,15 @@ passport.deserializeUser((id, done) => {
 });
 
 export default passport.use(
-  new Strategy((username: string, password: string, done) => {
+  new Strategy(async (username: string, password: string, done) => {
     try {
-      const findUser = fakeUsers.find((user) => user.username == username);
-      if (!findUser) throw new Error("User not found");
-      if (findUser.password != password)
-        throw new Error("Bad Credentials");
+      const findUser = await User.findOne({ username })
+      if (!findUser) return done(null, false, { message: 'User not found' })
+      if (findUser.password != password) return done(null, false, { message: 'Bad credentials' })
+      // @ts-ignore ---
       done(null, findUser);
     } catch (err) {
-      done(err, undefined);
+      done(err, undefined, { message: 'User not found' });
     }
   })
 );

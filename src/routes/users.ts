@@ -3,6 +3,7 @@ import { IUser, RequestFindUserIndex } from '../types/users';
 import { fakeUsers } from "../utils/constants";
 import { resolveIndexByUserId } from '../utils/middleware';
 import { createUserValidatorSchema, getUsersValidatorSchema } from '../validators/user';
+import { User } from '../mongoose/schemas/user';
 export const usersRouter = Router()
 
 // @ts-ignore ---
@@ -25,16 +26,16 @@ usersRouter.get('/', (req: Request, res: Response) => {
 
   if (filter && value) {
 
-  const filterKey = filter as keyof IUser;
+    const filterKey = filter as keyof IUser;
 
-  filteredUsers = fakeUsers.filter(user => {
-    const fieldValue = user[filterKey];
+    filteredUsers = fakeUsers.filter(user => {
+      const fieldValue = user[filterKey];
 
-    // Garantir que o valor seja string e evitar erro
-    if (typeof fieldValue !== 'string') return false;
+      // Garantir que o valor seja string e evitar erro
+      if (typeof fieldValue !== 'string') return false;
 
-    return fieldValue.toLocaleLowerCase().includes(value.toLowerCase());
-  });
+      return fieldValue.toLocaleLowerCase().includes(value.toLowerCase());
+    });
   }
 
   return res.status(200).send(filteredUsers);
@@ -46,14 +47,14 @@ usersRouter.get('/:id', (req: Request, res: Response) => {
 
   const user = fakeUsers.find((user: IUser) => user.id === parsedId);
 
-  if (!user)  res.status(404).send({ message: 'User not found' });
+  if (!user) res.status(404).send({ message: 'User not found' });
 
   res.status(200).send(user);
 });
 
 
-// @ts-ignore aaa
-usersRouter.post('', (req: Request, res: Response) => {
+// @ts-ignore ---
+usersRouter.post('', async (req: Request, res: Response) => {
   const result = createUserValidatorSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -66,33 +67,35 @@ usersRouter.post('', (req: Request, res: Response) => {
     res.status(400).json({ message: 'Username is required' });
   }
 
-  const newUser: IUser = {
-    id: fakeUsers.length > 0 ? Math.max(...fakeUsers.map(u => u.id)) + 1 : 1,
-    username,
-    displayName: (displayName ? displayName : undefined),
-    password,
-  };
-
-  fakeUsers.push(newUser);
-
-  res.status(201).json(newUser);
+  try {
+    const newUser = await new User({
+      username,
+      displayName: (displayName ? displayName : undefined),
+      password,
+    }).save()
+    return res.status(201).send(newUser)
+  } catch (error) {
+    return res.status(400).send({
+      error
+    })
+  }
 })
 
 // @ts-ignore i dont really know
 usersRouter.put('/:id', resolveIndexByUserId, (req: RequestFindUserIndex, res: Response) => {
-  const { findUserIndex, body} = req
+  const { findUserIndex, body } = req
 
   // @ts-ignore i am just trying thins
   const updatedUser = fakeUsers[findUserIndex] = { id: fakeUsers[findUserIndex].id, ...body }
 
   res.status(200).json(updatedUser)
-  
+
 })
 
 // @ts-ignore i dont really know
 usersRouter.patch('/:id', resolveIndexByUserId, (req: resolveIndexByUserId, res: Response) => {
-  const { findUserIndex, body} = req
-  
+  const { findUserIndex, body } = req
+
   const updatedUser = fakeUsers[findUserIndex] = { ...fakeUsers[findUserIndex], ...body }
 
   res.status(200).json(updatedUser)
@@ -106,5 +109,5 @@ usersRouter.delete('/:id', resolveIndexByUserId, (req: resolveIndexByUserId, res
   res.status(200).json({
     msg: 'User removed'
   })
-  
+
 })

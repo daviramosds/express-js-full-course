@@ -1,14 +1,25 @@
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import express, { Request, response, Response } from 'express';
+import express, { Request, Response } from 'express';
 import session from 'express-session';
 import passport from 'passport';
 import router from './routes';
 import "./strategies/local";
+import mongoose from 'mongoose';
+
+dotenv.config()
 
 const app = express();
 
-dotenv.config()
+const mongoUser = process.env.MONGO_ROOT_USERNAME;
+const mongoPass = process.env.MONGO_ROOT_PASSWORD;
+const dbName = process.env.MONGO_DB_NAME;
+
+const mongoUri = `mongodb://${mongoUser}:${mongoPass}@localhost:27017/${dbName}`;
+
+mongoose.connect(mongoUri, { authSource: 'admin' })
+  .then(() => console.log('Database connected'))
+  .catch(err => console.log('Error connecting to db', err))
 
 app.use(express.json())
 app.use(cookieParser())
@@ -34,25 +45,6 @@ app.get('/api', (req: Request, res: Response) => {
   req.session.visited = true
   res.cookie('hello', 'world', { maxAge: 10000 })
   res.status(200).send('Hello, world');
-});
-
-// @ts-ignore ---
-app.post('/api/auth', passport.authenticate('local'), (req: Request, res: Response) => {
-  return res.send(req.session.passport)
-});
-
-// @ts-ignore ---
-app.get('/api/auth/', (req: Request, res: Response) => {
-  return req.user ? res.sendStatus(200) : res.sendStatus(401)
-});
-
-// @ts-ignore ---
-app.post('/api/auth/logout', (req: Request, res: Response) => {
-  if (!req.user) return res.sendStatus(401)
-  req.logout((err) => {
-    if (err) return response.sendStatus(400)
-    return res.send(200)
-  })
 });
 
 app.listen(PORT, () => {
