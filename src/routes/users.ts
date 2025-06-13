@@ -4,6 +4,7 @@ import { fakeUsers } from "../utils/constants";
 import { resolveIndexByUserId } from '../utils/middleware';
 import { createUserValidatorSchema, getUsersValidatorSchema } from '../validators/user';
 import { User } from '../mongoose/schemas/user';
+import { hashPassword } from '../utils/helper';
 export const usersRouter = Router()
 
 // @ts-ignore ---
@@ -31,7 +32,6 @@ usersRouter.get('/', (req: Request, res: Response) => {
     filteredUsers = fakeUsers.filter(user => {
       const fieldValue = user[filterKey];
 
-      // Garantir que o valor seja string e evitar erro
       if (typeof fieldValue !== 'string') return false;
 
       return fieldValue.toLocaleLowerCase().includes(value.toLowerCase());
@@ -60,8 +60,10 @@ usersRouter.post('', async (req: Request, res: Response) => {
   if (!result.success) {
     return res.status(400).json({ errors: result.error.format() });
   }
-
+  
   const { username, displayName, password } = result.data;
+  
+  const hashedPassword = hashPassword(password)
 
   if (!username) {
     res.status(400).json({ message: 'Username is required' });
@@ -71,7 +73,7 @@ usersRouter.post('', async (req: Request, res: Response) => {
     const newUser = await new User({
       username,
       displayName: (displayName ? displayName : undefined),
-      password,
+      password: hashedPassword,
     }).save()
     return res.status(201).send(newUser)
   } catch (error) {

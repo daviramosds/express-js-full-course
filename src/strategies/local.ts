@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy } from "passport-local";
 import { User } from "../mongoose/schemas/user";
+import { comparePassword } from "../utils/helper";
 
 
 passport.serializeUser(({ id }, done) => {
@@ -23,7 +24,7 @@ export default passport.use(
     try {
       const findUser = await User.findOne({ username })
       if (!findUser) return done(null, false, { message: 'User not found' })
-      if (findUser.password != password) return done(null, false, { message: 'Bad credentials' })
+      if (!comparePassword(password, findUser.password)) return done(null, false, { message: 'Bad credentials' })
       // @ts-ignore ---
       done(null, findUser);
     } catch (err) {
