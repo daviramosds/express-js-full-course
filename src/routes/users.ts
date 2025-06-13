@@ -1,20 +1,13 @@
 import { Request, Response, Router } from 'express';
-import { IUser, RequestFindUserIndex } from '../types/users';
-import { fakeUsers } from "../utils/constants";
-import { resolveIndexByUserId } from '../utils/middleware';
-import { createUserValidatorSchema, getUsersValidatorSchema } from '../validators/user';
 import { User } from '../mongoose/schemas/user';
+import { IUser, RequestFindUserIndex } from '../types/users';
 import { hashPassword } from '../utils/helper';
+import { createUserValidatorSchema, getUsersValidatorSchema, patchUserValidatorSchema, updateUserValidatorSchema } from '../validators/user';
 export const usersRouter = Router()
 
 // @ts-ignore ---
-usersRouter.get('/', (req: Request, res: Response) => {
-  req.sessionStore.get(req.sessionID, (err, sessionData) => {
-    if (err) throw err
-    console.log(sessionData)
-  })
-
-  const result = getUsersValidatorSchema.safeParse(req.query);
+usersRouter.get('/', async ({ query }: Request, res: Response) => {
+  const result = getUsersValidatorSchema.safeParse(query);
 
   if (!result.success) {
     console.log(result.error)
@@ -23,13 +16,13 @@ usersRouter.get('/', (req: Request, res: Response) => {
 
   const { filter, value } = result.data;
 
-  let filteredUsers: IUser[] = [...fakeUsers]
+  let filteredUsers = await User.find({}, { password: 0 })
 
   if (filter && value) {
 
     const filterKey = filter as keyof IUser;
 
-    filteredUsers = fakeUsers.filter(user => {
+    filteredUsers = filteredUsers.filter(user => {
       const fieldValue = user[filterKey];
 
       if (typeof fieldValue !== 'string') return false;
@@ -41,11 +34,15 @@ usersRouter.get('/', (req: Request, res: Response) => {
   return res.status(200).send(filteredUsers);
 });
 
-usersRouter.get('/:id', (req: Request, res: Response) => {
+// @ts-ignore ---
+usersRouter.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const parsedId = parseInt(id);
 
-  const user = fakeUsers.find((user: IUser) => user.id === parsedId);
+  if (!User.base.Types.ObjectId.isValid(id)) {
+    return res.status(400).send({ message: 'Invalid User ID format' });
+  }
+
+  const user = await User.findById(id, { password: 0 })
 
   if (!user) res.status(404).send({ message: 'User not found' });
 
@@ -60,9 +57,9 @@ usersRouter.post('', async (req: Request, res: Response) => {
   if (!result.success) {
     return res.status(400).json({ errors: result.error.format() });
   }
-  
+
   const { username, displayName, password } = result.data;
-  
+
   const hashedPassword = hashPassword(password)
 
   if (!username) {
@@ -84,32 +81,85 @@ usersRouter.post('', async (req: Request, res: Response) => {
 })
 
 // @ts-ignore i dont really know
-usersRouter.put('/:id', resolveIndexByUserId, (req: RequestFindUserIndex, res: Response) => {
-  const { findUserIndex, body } = req
+usersRouter.put('/:id', async (req: RequestFindUserIndex, res: Response) => {
+  const { id } = req.params;
 
-  // @ts-ignore i am just trying thins
-  const updatedUser = fakeUsers[findUserIndex] = { id: fakeUsers[findUserIndex].id, ...body }
+  if (!User.base.Types.ObjectId.isValid(id)) {
+    return res.status(400).send({ message: 'Invalid User ID format' });
+  }
 
-  res.status(200).json(updatedUser)
+  const result = updateUserValidatorSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ errors: result.error.format() });
+  }
+  const { password, ...updateFields } = result.data;
 
+  if (password) {
+    // @ts-ignore i am already checking if it exists
+    updateFields.password = await hashPassword(password);
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    id,
+    updateFields,
+    { new: true, runValidators: true, select: '-password' }
+  );
+
+  if (!updatedUser) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  res.status(200).json(updatedUser);
 })
 
 // @ts-ignore i dont really know
-usersRouter.patch('/:id', resolveIndexByUserId, (req: resolveIndexByUserId, res: Response) => {
-  const { findUserIndex, body } = req
+usersRouter.patch('/:id', async (req: resolveIndexByUserId, res: Response) => {
+  const { id } = req.params;
 
-  const updatedUser = fakeUsers[findUserIndex] = { ...fakeUsers[findUserIndex], ...body }
+  if (!User.base.Types.ObjectId.isValid(id)) {
+    return res.status(400).send({ message: 'Invalid User ID format' });
+  }
 
-  res.status(200).json(updatedUser)
+  if (!User.base.Types.ObjectId.isValid(id)) {
+    return res.status(400).send({ message: 'Invalid User ID format' });
+  }
+
+  const result = patchUserValidatorSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ errors: result.error.format() });
+  }
+  const { password, ...updateFields } = result.data;
+
+  if (password) {
+    // @ts-ignore i am already checking if it exists
+    updateFields.password = await hashPassword(password);
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    id,
+    updateFields,
+    { new: true, runValidators: true, select: '-password' }
+  );
+
+  if (!updatedUser) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  res.status(200).json(updatedUser);
 })
 
 // @ts-ignore i dont really know
-usersRouter.delete('/:id', resolveIndexByUserId, (req: resolveIndexByUserId, res: Response) => {
+usersRouter.delete('/:id', async (req: resolveIndexByUserId, res: Response) => {
+  const { id } = req.params;
 
-  fakeUsers.splice(req.resolveIndexByUserId, 1)
+  if (!User.base.Types.ObjectId.isValid(id)) {
+    return res.status(400).send({ message: 'Invalid User ID format' });
+  }
 
-  res.status(200).json({
-    msg: 'User removed'
-  })
+  const deletedUser = await User.findByIdAndDelete(id);
+  if (!deletedUser) {
+    return res.status(404).json({ message: 'User not found' });
+  }
 
+  res.status(200).json({ message: 'User removed successfully' });
 })
