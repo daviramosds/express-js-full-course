@@ -4,7 +4,8 @@ import express, { Request, Response } from 'express';
 import session from 'express-session';
 import passport from 'passport';
 import router from './routes';
-import "./strategies/local";
+// import "./strategies/local";
+import "./strategies/discord";
 import mongoose from 'mongoose';
 import MongoStore from 'connect-mongo';
 

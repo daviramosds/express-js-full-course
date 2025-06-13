@@ -9,6 +9,14 @@ authRouter.post('/', passport.authenticate('local'), (req: Request, res: Respons
 });
 
 // @ts-ignore ---
+authRouter.get('/discord', passport.authenticate('discord'))
+
+// @ts-ignore ---
+authRouter.get('/discord/redirect', passport.authenticate('discord'), (req: Request, res: Response) => {
+  return res.sendStatus(200)
+});
+
+// @ts-ignore ---
 authRouter.get('/', (req: Request, res: Response) => {
   return req.user ? res.status(200).send(req.user) : res.sendStatus(401)
 });

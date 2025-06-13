@@ -3,7 +3,6 @@ import { Strategy } from "passport-local";
 import { User } from "../mongoose/schemas/user";
 import { comparePassword } from "../utils/helper";
 
-
 passport.serializeUser(({ id }, done) => {
   done(null, id)
 })
