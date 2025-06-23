@@ -1,8 +1,9 @@
 import { Request, Response, Router } from 'express';
+import { UsersController } from '../controllers/users';
 import { User } from '../mongoose/schemas/user';
 import { IUser, RequestFindUserIndex } from '../types/users';
 import { hashPassword } from '../utils/helper';
-import { createUserValidatorSchema, getUsersValidatorSchema, patchUserValidatorSchema, updateUserValidatorSchema } from '../validators/user';
+import { getUsersValidatorSchema, patchUserValidatorSchema, updateUserValidatorSchema } from '../validators/user';
 export const usersRouter = Router()
 
 // @ts-ignore ---
@@ -44,50 +45,11 @@ usersRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // @ts-ignore ---
-usersRouter.get('/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  if (!User.base.Types.ObjectId.isValid(id)) {
-    return res.status(400).send({ message: 'Invalid User ID format' });
-  }
-
-  const user = await User.findById(id, { password: 0 })
-
-  if (!user) res.status(404).send({ message: 'User not found' });
-
-  res.status(200).send(user);
-});
+usersRouter.get('/:id', UsersController.getUserById);
 
 
 // @ts-ignore ---
-usersRouter.post('', async (req: Request, res: Response) => {
-  const result = createUserValidatorSchema.safeParse(req.body);
-
-  if (!result.success) {
-    return res.status(400).json({ errors: result.error.format() });
-  }
-
-  const { username, displayName, password } = result.data;
-
-  const hashedPassword = hashPassword(password)
-
-  if (!username) {
-    res.status(400).json({ message: 'Username is required' });
-  }
-
-  try {
-    const newUser = await new User({
-      username,
-      displayName: (displayName ? displayName : undefined),
-      password: hashedPassword,
-    }).save()
-    return res.status(201).send(newUser)
-  } catch (error) {
-    return res.status(400).send({
-      error
-    })
-  }
-})
+usersRouter.post('', UsersController.createUser)
 
 // @ts-ignore i dont really know
 usersRouter.put('/:id', async (req: RequestFindUserIndex, res: Response) => {

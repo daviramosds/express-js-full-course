@@ -32,6 +32,8 @@
 		"typescript-eslint": "^8.34.0"
 	},
 	"scripts": {
-		"dev": "ts-node-dev --respawn --transpile-only src/server.ts"
+		"start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+		"start": "ts-node-dev src/server.ts",
+		"test": "jest"
 	}
 }
